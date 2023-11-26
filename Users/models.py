@@ -29,6 +29,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     updated_at = models.DateTimeField(auto_now=True)
     address = models.TextField(default="", null=False)
     zip_code = models.CharField(max_length=255, default="", null=False)
+    city = models.CharField(max_length=255, default="", null=False)
     state = models.CharField(max_length=255, default="", null=False)
     country = models.CharField(max_length=255, default="", null=False)
     description = models.TextField(default="", null=False)

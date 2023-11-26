@@ -31,15 +31,18 @@ class UserRegistrationView(APIView):
 
         # Get user address details from the registration form
         address = request.POST.get('address')
+        city = request.POST.get('city')
         state = request.POST.get('state')
         zip_code = request.POST.get('zip_code')
 
-        if address and state and zip_code:
+        if address or state or zip_code or city:
         # Run SmartyStreets address validation
-            is_valid_address = validate_address(address, zip_code, state)
-            if not is_valid_address:
+            is_valid_address = validate_address(address, zip_code, city, state)
+            if is_valid_address is None:
                 return Response({'error': 'Address is not valid!'}, status=status.HTTP_400_BAD_REQUEST)
-            user = User.objects.create_user(email=email, password=password, address = address, state = state, zip_code=zip_code)
+            user = User.objects.create_user(email=email, password=password, address = is_valid_address['address'],
+                                            city = is_valid_address['city'], state = is_valid_address['state'],
+                                            zip_code=zip_code)
         else:
             user = User.objects.create_user(email=email, password=password)
 
@@ -49,17 +52,18 @@ class UserRegistrationView(APIView):
         return Response({'message': 'User registered successfully.'}, status=status.HTTP_201_CREATED)
 
 
-def validate_address(address, zip_code, state):
+def validate_address(address, zip_code, city, state):
     key = os.environ['SMARTY_AUTH_WEB']
     hostname = os.environ['SMARTY_WEBSITE_DOMAIN']
     credentials = SharedCredentials(key, hostname)
 
     client = ClientBuilder(credentials).with_licenses(["us-core-cloud"]).build_us_street_api_client()
+
     lookup = StreetLookup()
     lookup.street = address
+    lookup.city = city
     lookup.state = state
     lookup.zipcode = zip_code
-
     lookup.match = MatchType.STRICT
 
     try:
@@ -70,10 +74,15 @@ def validate_address(address, zip_code, state):
 
     result = lookup.result
     if result:
+        error_codes = ["A#", "B#", "C#", "D#", "F#", "I#", "M#", "S#", "W#"]
+        if any(code in result[0].analysis.footnotes for code in error_codes):
+            return None
+        return {"address" : result[0].delivery_line_1,
+                "zip_code" : result[0].components.zipcode,
+                "city" : result[0].components.city_name,
+                "state" : result[0].components.state_abbreviation}
 
-        print(result[0].components.street_name)
-        print(result[0].components.zipcode)
-    return bool(result)  # Returns True if there is at least one valid candidate
+    return None  # Returns True if there is at least one valid candidate
 
 user_registered_signal = Signal()
 
@@ -101,5 +110,3 @@ def publish_to_pubsub(email):
     # Publish message
     future = publisher.publish(topic_path, data=message_str)
     future.result()
-
-    print(f'Message published to {topic_path}.')

@@ -89,13 +89,13 @@ WSGI_APPLICATION = "ThriftUStore_Users.wsgi.application"
 
 # for connecting to local database
 SETTING_MODEL = 'dev'
-SITE_ID = 1
+# SITE_ID = 1
 
 # # for connecting to remote database
 # SETTING_MODEL = 'test'
 
 # change this one before deployment
-# SITE_ID = 2
+SITE_ID = 2
 
 if 'GAE_INSTANCE' in os.environ:
     DATABASES = {
@@ -211,7 +211,9 @@ AUTHENTICATION_BACKENDS = [
 SOCIALACCOUNT_PROVIDERS = {
     'google': {
         'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'offline'},
+        'AUTH_PARAMS': {'access_type': 'offline',
+                        'prompt': 'select_account'},
+
     }
 }
 # SOCIALACCOUNT_LOGIN_ON_GET=True
@@ -229,6 +231,9 @@ ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_STORE_TOKENS = True
+SOCIALACCOUNT_LOGIN_ON_GET=True
+
+
 
 
 

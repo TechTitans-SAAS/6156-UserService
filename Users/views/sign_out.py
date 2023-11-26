@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 
+
 class UserSignOutView(APIView):
     def post(self, request):
         logout(request)
